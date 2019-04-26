@@ -17,7 +17,7 @@ public class MysqlToNeo4j {
 
     public static void main(String[] args) throws SQLException {
         Connection mysqlConnection = MysqlDatabase.getConnection();
-        Session session = Neo4jDatabase.getSession();
+        Session sessionAll = Neo4jDatabase.getSession();
 
         /*
             获得表格总行数，计算循环次数
@@ -30,17 +30,18 @@ public class MysqlToNeo4j {
         /*
             初始化主键（ID）
          */
-        int authorId = session.run("MATCH (o:czc_Author) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int paperId = session.run("MATCH (o:czc_Paper) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int orgId = session.run("MATCH (o:czc_Organ) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int journalId = session.run("MATCH (o:czc_Journal) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int keywordId = session.run("MATCH (o:czc_Keyword) RETURN COUNT(o) AS count").next().get("count").asInt();
-        session.close();
+        int authorId = sessionAll.run("MATCH (o:czc_Author) RETURN COUNT(o) AS count").next().get("count").asInt();
+        int paperId = sessionAll.run("MATCH (o:czc_Paper) RETURN COUNT(o) AS count").next().get("count").asInt();
+        int orgId = sessionAll.run("MATCH (o:czc_Organ) RETURN COUNT(o) AS count").next().get("count").asInt();
+        int journalId = sessionAll.run("MATCH (o:czc_Journal) RETURN COUNT(o) AS count").next().get("count").asInt();
+        int keywordId = sessionAll.run("MATCH (o:czc_Keyword) RETURN COUNT(o) AS count").next().get("count").asInt();
+        sessionAll.close();
         /*
             每次循环处理1000条数据
          */
 //        for(int round = 0;round< allRounds;round++){
         for (int round = 0; round < 5; round++) {
+            Session session = Neo4jDatabase.getSession();
             PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,?");
             mysqlPs.setInt(1, 1000 * round);
             mysqlPs.setInt(2, 1000 * (++round));
@@ -48,7 +49,6 @@ public class MysqlToNeo4j {
             int line = 0;
             //依次从每行数据中提取实体、建立关系
             while (mResult.next()) {
-                session = Neo4jDatabase.getSession();
                 line ++;
                 if(line%10 == 0){
                     logger.info("当前已完成第 "+round+"轮，"+(line/1000.0)+"%");
