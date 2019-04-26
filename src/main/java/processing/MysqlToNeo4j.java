@@ -16,7 +16,7 @@ public class MysqlToNeo4j {
     private static Logger logger = Logger.getLogger(MysqlToNeo4j.class);
 
     public static void main(String[] args) throws SQLException {
-        Connection mysqlConnection  = MysqlDatabase.getConnection();
+        Connection mysqlConnection = MysqlDatabase.getConnection();
         Session session = Neo4jDatabase.getSession();
 
         /*
@@ -26,7 +26,7 @@ public class MysqlToNeo4j {
         result.next();
         int row = result.getInt("count");
         int allRounds = (int) (row / 1000);
-        logger.info("获取到 "+row+" 条数据");
+        logger.info("获取到 " + row + " 条数据");
         /*
             初始化主键（ID）
          */
@@ -39,15 +39,20 @@ public class MysqlToNeo4j {
         /*
             每次循环处理1000条数据
          */
-        for(int round = 0;round< allRounds;round++){
-            session = Neo4jDatabase.getSession();
+//        for(int round = 0;round< allRounds;round++){
+        for (int round = 0; round < 5; round++) {
             PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,?");
             mysqlPs.setInt(1, 1000 * round);
             mysqlPs.setInt(2, 1000 * (++round));
             ResultSet mResult = mysqlPs.executeQuery();
-
+            int line = 0;
             //依次从每行数据中提取实体、建立关系
-            while (mResult.next()){
+            while (mResult.next()) {
+                session = Neo4jDatabase.getSession();
+                line ++;
+                if(line%10 == 0){
+                    logger.info("当前已完成第 "+round+"轮，"+(line/1000.0)+"%");
+                }
                 try {
                     /*
                         提取实体
@@ -85,9 +90,9 @@ public class MysqlToNeo4j {
                         paperId++;
                         //添加paper实体
                         session.run("CREATE (p:czc_Paper {paperId: " + paperId + ", paper_name: \"" + paper.trim()
-                                        + "\", paper_class: \"" + mResult.getString("Class") + "\"})");
+                                + "\", paper_class: \"" + mResult.getString("Class") + "\"})");
                         //年份不为空时
-                        if (!TextUtils.isEmpty(year)){
+                        if (!TextUtils.isEmpty(year)) {
                             //添加paper-year关系
                             session.run("MATCH (p:czc_Paper),(y:czc_Year) WHERE p.paperId =" + paperId
                                     + " AND y.year =\"" + year.trim() + "\" CREATE (p)-[r:TIME]->(y)");
@@ -109,7 +114,6 @@ public class MysqlToNeo4j {
                         //System.out.println("缺少作者的论文：" + paper);
                         continue;
                     }
-
 
 
                     //添加organ实体
@@ -175,9 +179,10 @@ public class MysqlToNeo4j {
                         }
                     }
 
-                }catch (Exception e){
+                } catch (Exception e) {
                     logger.warn("处理数据时出错");
                 }
+                session.close();
             }
         }
 
