@@ -1,63 +1,41 @@
-package processing;
+package thread;
 
-import database.MysqlDatabase;
 import database.Neo4jDatabase;
 import org.apache.http.util.TextUtils;
 import org.apache.log4j.Logger;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class MysqlToNeo4j {
-    private static Logger logger = Logger.getLogger(MysqlToNeo4j.class);
+public class ParseData extends Thread{
 
-    public static void main(String[] args) throws SQLException {
-        Connection mysqlConnection = MysqlDatabase.getConnection();
-        Session sessionAll = Neo4jDatabase.getSession();
+    private Thread t;
+    private String threadName;
 
-        /*
-            获得表格总行数，计算循环次数
-         */
-        ResultSet result = mysqlConnection.createStatement().executeQuery("SELECT count(*) as count FROM ArticleInfo_2010");
-        result.next();
-        int row = result.getInt("count");
-        int allRounds = (int) (row / 1000);
-        logger.info("获取到 " + row + " 条数据");
+    private static IdManager idManager = new IdManager();
+    private static MysqlManager mysqlManager = new MysqlManager();
 
+    private static Logger logger = Logger.getLogger(ParseData.class);
 
-        /*
-            初始化主键（ID）
-         */
-        int authorId = sessionAll.run("MATCH (o:czc_Author) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int paperId = sessionAll.run("MATCH (o:czc_Paper) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int orgId = sessionAll.run("MATCH (o:czc_Organ) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int journalId = sessionAll.run("MATCH (o:czc_Journal) RETURN COUNT(o) AS count").next().get("count").asInt();
-        int keywordId = sessionAll.run("MATCH (o:czc_Keyword) RETURN COUNT(o) AS count").next().get("count").asInt();
-        sessionAll.close();
-        /*
-            每次循环处理1000条数据
-         */
-        for (int round = 0; round < allRounds; round++) {
-//        for (int round = 0; round < allRounds;) {
-            Session session = Neo4jDatabase.getSession();
-            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,1000");
-            mysqlPs.setInt(1, 1000 * round);
-            ResultSet mResult = mysqlPs.executeQuery();
-            int line = 0;
-            //依次从每行数据中提取实体、建立关系
-            long begintime;
-            long endtime;
+    private int totalThread = 0;
+    static ConcurrentHashMap<Integer,Integer> activeThread = new ConcurrentHashMap<Integer, Integer>();
 
-            while (mResult.next()) {
-                line++;
-                if (line % 10 == 0) {
-                    logger.info("当前已完成第 " + (round + 1) + " 轮，" + (line / 1000.0) * 100 + "%");
-                }
+    ParseData(String name) {
+        threadName = name;
+        System.out.println("Creating " +  threadName );
+    }
+
+    public void run()  {
+        System.out.println("Running " +  threadName );
+        activeThread.put(this.hashCode(),0);
+        Session session = Neo4jDatabase.getSession();
+        try {
+            ResultSet mResult = mysqlManager.getBatch();
+            while (mResult.next()){
                 try {
                     /*
                         提取实体
@@ -74,7 +52,9 @@ public class MysqlToNeo4j {
                     StatementResult orgResult;
                     StatementResult journalResult;
 
-                    begintime = System.nanoTime();
+                    int paperId = idManager.getPaperId();
+
+
                     /*
                         添加实体及关系
                      */
@@ -94,7 +74,6 @@ public class MysqlToNeo4j {
                     //检查作者是否为空
                     HashMap<String, Integer> authorMap = new HashMap<String, Integer>();
                     if (!TextUtils.isEmpty(author)) {
-                        paperId++;
                         //添加paper实体
                         session.run("CREATE (p:czc_Paper {paperId: " + paperId + ", paper_name: \"" + paper.trim()
                                 + "\", paper_class: \"" + mResult.getString("Class") + "\"})");
@@ -110,7 +89,7 @@ public class MysqlToNeo4j {
                         String[] authorArray = author.split(";");
                         for (int i = 0; i < authorArray.length; i++) {
                             if (!TextUtils.isEmpty(authorArray[i].trim())) {  //判空（必要）
-                                authorId++;
+                                int authorId = idManager.getAuthorId();
                                 session.run("CREATE (p:czc_Author {authorId: " + authorId
                                         + ", author_name: \"" + authorArray[i].trim() + "\"})");
                                 authorMap.put(authorArray[i].trim(), authorId);
@@ -134,7 +113,7 @@ public class MysqlToNeo4j {
                                     + orgArray[i].trim() + "\" RETURN o");
                             //不存在则添加organization实体
                             if (!orgResult.hasNext()) {  //去重
-                                orgId++;
+                                int orgId = idManager.getOrgId();
                                 session.run("CREATE (o:czc_Organ {orgId: " + orgId
                                         + ", org_name: \"" + orgArray[i].trim() + "\"})");
                             }
@@ -147,7 +126,7 @@ public class MysqlToNeo4j {
                         journalResult = session.run("MATCH (j:czc_Journal) WHERE j.journal_name = \""
                                 + journal.trim() + "\" RETURN j");
                         if (!journalResult.hasNext()) {  //去重
-                            journalId++;
+                            int journalId = idManager.getJournalId();
                             session.run("CREATE (j:czc_Journal {journalId: " + journalId
                                     + ", journal_name: \"" + journal.trim() + "\"})");
                         }
@@ -165,7 +144,7 @@ public class MysqlToNeo4j {
                                 StatementResult keyword_result = session.run("MATCH (k:czc_Keyword) WHERE k.keyword_name = \"" +
                                         keywordArray[i].trim() + "\" RETURN k");
                                 if (!keyword_result.hasNext()) {  //去重
-                                    keywordId++;
+                                    int keywordId = idManager.getKeywordId();
                                     session.run("CREATE (k:czc_Keyword {keywordId: " + keywordId
                                             + ", keyword_name: \"" + keywordArray[i].trim() + "\"})");
                                 }
@@ -201,8 +180,41 @@ public class MysqlToNeo4j {
                     logger.warn("处理数据时出错");
                 }
             }
+        } catch (SQLException e){}
+        finally {
             session.close();
+        }
+        activeThread.remove(this.hashCode());
+        System.out.println("Thread " +  threadName + " exiting.");
+    }
+
+    public void start () {
+        System.out.println("Starting " +  threadName );
+        if (t == null) {
+            t = new Thread (this, threadName);
+            t.start ();
         }
     }
 }
 
+class TestThread {
+
+    static MysqlManager mysqlManager = new MysqlManager();
+    public static void main(String args[]) {
+
+        while (true){
+            if(ParseData.activeThread.size()<3) {
+                ParseData T1 = new ParseData("T"+mysqlManager.getRound());
+                T1.start();
+            }
+
+            try {
+                Thread.sleep(2000);
+            }catch (Exception e){}
+            if(mysqlManager.getRound()>=mysqlManager.getAllRounds()){
+                break;
+            }
+        }
+
+    }
+}
