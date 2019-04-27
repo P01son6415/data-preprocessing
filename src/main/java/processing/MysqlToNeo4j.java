@@ -39,19 +39,22 @@ public class MysqlToNeo4j {
         /*
             每次循环处理1000条数据
          */
-//        for(int round = 0;round< allRounds;round++){
-        for (int round = 0; round < 5; round++) {
+        for(int round = 0;round< allRounds;round++){
+//        for (int round = 0; round < allRounds;) {  // 之前limit语句用法错了，改了一下，现在没问题了（czc）
             Session session = Neo4jDatabase.getSession();
             PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,?");
             mysqlPs.setInt(1, 1000 * round);
-            mysqlPs.setInt(2, 1000 * (++round));
+            mysqlPs.setInt(2, 1000);
             ResultSet mResult = mysqlPs.executeQuery();
             int line = 0;
             //依次从每行数据中提取实体、建立关系
+            long begintime;
+            long endtime;
+
             while (mResult.next()) {
                 line ++;
                 if(line%10 == 0){
-                    logger.info("当前已完成第 "+round+"轮，"+(line/1000.0)+"%");
+                    logger.info("当前已完成第 "+ (round+1) +" 轮，"+(line/1000.0)*100+"%");
                 }
                 try {
                     /*
@@ -69,6 +72,7 @@ public class MysqlToNeo4j {
                     StatementResult orgResult;
                     StatementResult journalResult;
 
+                    begintime = System.nanoTime();
                     /*
                         添加实体及关系
                      */
@@ -99,6 +103,7 @@ public class MysqlToNeo4j {
                         }
 
                         //添加author实体
+                        //TODO: 使用HashMap记录<Author:ID>
                         String[] authorArray = author.split(";");
                         for (int i = 0; i < authorArray.length; i++) {
                             if (!TextUtils.isEmpty(authorArray[i].trim())) {  //判空（必要）
@@ -106,7 +111,8 @@ public class MysqlToNeo4j {
                                 session.run("CREATE (p:czc_Author {authorId: " + authorId
                                         + ", author_name: \"" + authorArray[i].trim() + "\"})");
                                 //添加author-paper关系
-                                session.run("MATCH (a:czc_Author),(p:czc_Paper) WHERE a.authorId =" + authorId + " AND p.paperId =" + paperId
+                                session.run("MATCH (a:czc_Author),(p:czc_Paper) WHERE a.authorId =" +
+                                        authorId + " AND p.paperId =" + paperId
                                         + " CREATE (a)-[r:WRITE]->(p)");
                             }
                         }
@@ -114,7 +120,6 @@ public class MysqlToNeo4j {
                         //System.out.println("缺少作者的论文：" + paper);
                         continue;
                     }
-
 
                     //添加organ实体
                     if (!TextUtils.isEmpty(org)) {  //判空
@@ -131,6 +136,8 @@ public class MysqlToNeo4j {
                             }
                         }
                     }
+
+
                     //添加journal实体
                     if (!TextUtils.isEmpty(journal)) {  //判空
                         journalResult = session.run("MATCH (j:czc_Journal) WHERE j.journal_name = \""
@@ -141,7 +148,8 @@ public class MysqlToNeo4j {
                                     + ", journal_name: \"" + journal.trim() + "\"})");
                         }
                         //添加paper-journal关系
-                        session.run("MATCH (p:czc_Paper),(j:czc_Journal) WHERE p.paperId =" + paperId + " AND j.journal_name =\"" + journal.trim()
+                        session.run("MATCH (p:czc_Paper),(j:czc_Journal) WHERE p.paperId =" +
+                                paperId + " AND j.journal_name =\"" + journal.trim()
                                 + "\" CREATE (p)-[r:BELONG]->(j)");
                     }
 
@@ -150,20 +158,26 @@ public class MysqlToNeo4j {
                         String[] keywordArray = keyword.split(";");
                         for (int i = 0; i < keywordArray.length; i++) {
                             if (!TextUtils.isEmpty(keywordArray[i].trim())) {  //判空
-                                StatementResult keyword_result = session.run("MATCH (k:czc_Keyword) WHERE k.keyword_name = \"" + keywordArray[i].trim() + "\" RETURN k");
+                                StatementResult keyword_result = session.run("MATCH (k:czc_Keyword) WHERE k.keyword_name = \"" +
+                                        keywordArray[i].trim() + "\" RETURN k");
                                 if (!keyword_result.hasNext()) {  //去重
                                     keywordId++;
                                     session.run("CREATE (k:czc_Keyword {keywordId: " + keywordId
                                             + ", keyword_name: \"" + keywordArray[i].trim() + "\"})");
                                 }
                                 //添加paper-keyword关系
-                                session.run("MATCH (p:czc_Paper),(k:czc_Keyword) WHERE p.paperId =" + paperId + " AND k.keyword_name =\"" + keywordArray[i].trim()
+                                session.run("MATCH (p:czc_Paper),(k:czc_Keyword) WHERE p.paperId =" + paperId +
+                                        " AND k.keyword_name =\"" + keywordArray[i].trim()
                                         + "\" CREATE (p)-[r:INVOLVED]->(k)");
                             }
                         }
                     }
 
+
+
+
                     //添加author-organ关系
+                    //TODO:从HashMap中取作者ID，与Organ建立关系
                     if (!TextUtils.isEmpty(authorOrgan)) {
                         String a = null;
                         String o = null;
@@ -173,17 +187,19 @@ public class MysqlToNeo4j {
                                 a = aoArray[i].split("\\[")[0].trim();
                                 o = aoArray[i].split("\\[")[1].trim();
                                 o = o.replace("]", "").replace("\"", "\\\"");
-                                session.run("MATCH (a:czc_Author),(o:czc_Organ) WHERE a.author_name = \"" + a + "\" AND o.org_name = \"" + o
+                                session.run("MATCH (a:czc_Author),(o:czc_Organ) WHERE a.author_name = \"" +
+                                        a + "\" AND o.org_name = \"" + o
                                         + "\" CREATE (a)-[r:BELONG]->(o)");
                             }
                         }
                     }
-
+                    //endtime = System.nanoTime();
+                    //logger.info("statge5: " + (endtime-begintime)/1000 );
                 } catch (Exception e) {
                     logger.warn("处理数据时出错");
                 }
-                session.close();
             }
+            session.close();
         }
 
 
