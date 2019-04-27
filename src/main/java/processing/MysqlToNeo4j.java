@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 public class MysqlToNeo4j {
     private static Logger logger = Logger.getLogger(MysqlToNeo4j.class);
@@ -39,12 +40,11 @@ public class MysqlToNeo4j {
         /*
             每次循环处理1000条数据
          */
-        for(int round = 0;round< allRounds;round++){
-//        for (int round = 0; round < allRounds;) {  // 之前limit语句用法错了，改了一下，现在没问题了（czc）
+        for (int round = 0; round < allRounds; round++) {
+//        for (int round = 0; round < allRounds;) {
             Session session = Neo4jDatabase.getSession();
-            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,?");
+            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,1000");
             mysqlPs.setInt(1, 1000 * round);
-            mysqlPs.setInt(2, 1000);
             ResultSet mResult = mysqlPs.executeQuery();
             int line = 0;
             //依次从每行数据中提取实体、建立关系
@@ -52,9 +52,9 @@ public class MysqlToNeo4j {
             long endtime;
 
             while (mResult.next()) {
-                line ++;
-                if(line%10 == 0){
-                    logger.info("当前已完成第 "+ (round+1) +" 轮，"+(line/1000.0)*100+"%");
+                line++;
+                if (line % 10 == 0) {
+                    logger.info("当前已完成第 " + (round + 1) + " 轮，" + (line / 1000.0) * 100 + "%");
                 }
                 try {
                     /*
@@ -90,6 +90,7 @@ public class MysqlToNeo4j {
                         continue;
                     }
                     //检查作者是否为空
+                    HashMap<String, Integer> authorMap = new HashMap<String, Integer>();
                     if (!TextUtils.isEmpty(author)) {
                         paperId++;
                         //添加paper实体
@@ -110,6 +111,7 @@ public class MysqlToNeo4j {
                                 authorId++;
                                 session.run("CREATE (p:czc_Author {authorId: " + authorId
                                         + ", author_name: \"" + authorArray[i].trim() + "\"})");
+                                authorMap.put(authorArray[i].trim(), authorId);
                                 //添加author-paper关系
                                 session.run("MATCH (a:czc_Author),(p:czc_Paper) WHERE a.authorId =" +
                                         authorId + " AND p.paperId =" + paperId
@@ -173,9 +175,6 @@ public class MysqlToNeo4j {
                         }
                     }
 
-
-
-
                     //添加author-organ关系
                     //TODO:从HashMap中取作者ID，与Organ建立关系
                     if (!TextUtils.isEmpty(authorOrgan)) {
@@ -185,10 +184,11 @@ public class MysqlToNeo4j {
                         for (int i = 0; i < aoArray.length; i++) {
                             if (aoArray[i].contains("[")) {
                                 a = aoArray[i].split("\\[")[0].trim();
-                                o = aoArray[i].split("\\[")[1].trim();
-                                o = o.replace("]", "").replace("\"", "\\\"");
-                                session.run("MATCH (a:czc_Author),(o:czc_Organ) WHERE a.author_name = \"" +
-                                        a + "\" AND o.org_name = \"" + o
+                                o = aoArray[i].split("\\[")[1].trim()
+                                        .replace("]", "")
+                                        .replace("\"", "\\\"");
+                                session.run("MATCH (a:czc_Author),(o:czc_Organ) WHERE a.authorId = " +
+                                        authorMap.get(a) + " AND o.org_name = \"" + o
                                         + "\" CREATE (a)-[r:BELONG]->(o)");
                             }
                         }
