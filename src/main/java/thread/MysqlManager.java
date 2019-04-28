@@ -33,7 +33,7 @@ public class MysqlManager {
     public ResultSet getBatch() throws SQLException{
         synchronized (this){
             logger.info("Round: " + round);
-            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,1000");
+            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT Keyword FROM ArticleInfo_2010 limit ?,1000");
             mysqlPs.setInt(1, 1000 * round ++);
             ResultSet mResult = mysqlPs.executeQuery();
             return mResult;

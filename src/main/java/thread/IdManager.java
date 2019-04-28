@@ -22,7 +22,7 @@ public class IdManager {
                 .getJSONObject(0).getJSONArray("row").get(0).toString());
         this.journalId = Integer.valueOf(Neo4jRest.getExecuteData("MATCH (o:czc_Journal) RETURN COUNT(o) AS count")
                 .getJSONObject(0).getJSONArray("row").get(0).toString());
-        this.keywordId = Integer.valueOf(Neo4jRest.getExecuteData("MATCH (o:czc_Keyword) RETURN COUNT(o) AS count")
+        this.keywordId = Integer.valueOf(Neo4jRest.getExecuteData("MATCH (o:vector_Keyword) RETURN COUNT(o) AS count")
                 .getJSONObject(0).getJSONArray("row").get(0).toString());
     }
 

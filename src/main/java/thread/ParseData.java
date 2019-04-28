@@ -203,7 +203,7 @@ class TestThread {
     public static void main(String args[]) {
 
         while (true){
-            if(ParseData.activeThread.size()<3) {
+            if(ParseData.activeThread.size()<12) {
                 ParseData T1 = new ParseData("T"+mysqlManager.getRound());
                 T1.start();
             }
