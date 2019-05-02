@@ -56,8 +56,8 @@ public class Mysql2Neo4jThread {
                                 PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit ?,1000");
                                 mysqlPs.setInt(1, 1000 * finalRound);
                                 ResultSet mResult = mysqlPs.executeQuery();
-                                //依次从每行数据中提取实体、建立关系
 
+                                //依次从每行数据中提取实体、建立关系
                                 try {
                                     while (mResult.next()) {
                                 /*
