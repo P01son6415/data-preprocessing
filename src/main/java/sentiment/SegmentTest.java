@@ -1,6 +1,7 @@
 
 package sentiment;
 
+import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.model.crf.CRFLexicalAnalyzer;
 import com.hankcs.hanlp.seg.Dijkstra.DijkstraSegment;
 import com.hankcs.hanlp.seg.NShort.NShortSegment;
@@ -23,7 +24,7 @@ public class SegmentTest
     public static void main(String[] args) throws IOException, SQLException
     {
         Connection mysqlConnection = MysqlDatabase.getConnection();
-        PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit 0,5");
+        PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit 100000,5");
         ResultSet mResult = mysqlPs.executeQuery();
         Segment nShortSegment = new NShortSegment().enableCustomDictionary(false).enablePlaceRecognize(true).enableOrganizationRecognize(true);
         Segment shortestSegment = new DijkstraSegment().enableCustomDictionary(false).enablePlaceRecognize(true).enableOrganizationRecognize(true);
@@ -39,6 +40,7 @@ public class SegmentTest
             //String abst = mResult.getString("Abstract");
 
             System.out.println("原文："+title);
+            System.out.println("0. 标准分词："+ HanLP.segment(title));
             System.out.println("1. N-最短分词：" + nShortSegment.seg(title) + "\n2. 最短路分词：" + shortestSegment.seg(title));
             System.out.println("3. CRF分词：" + crfLexicalAnalyzer.analyze(title));
 
@@ -48,7 +50,7 @@ public class SegmentTest
             {
                 System.out.print(term + " ");
             }
-            System.out.println("5. NLP分词："+NLPTokenizer.segment(title));
+            System.out.println("\n5. NLP分词："+NLPTokenizer.segment(title));
             System.out.println("===================================================");
         }
 
