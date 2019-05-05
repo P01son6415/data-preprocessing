@@ -2,16 +2,10 @@ package word2vec;
 
 import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.seg.common.Term;
-import database.MysqlDatabase;
 import org.apache.log4j.Logger;
-import thread.MysqlManager;
-import thread.ParseData;
 
 import java.io.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -38,14 +32,13 @@ public class Segment extends Thread {
 
     @Override
     public void run() {
-
-        Connection mysqlConnection = MysqlDatabase.getConnection();
-
+        System.out.println("running ");
+        activeThread.put(this.hashCode(),0);
 
         try {
 
-
-            ResultSet mResult = dataDelivery.getBouch();
+            System.out.println("GetBatch");
+            ResultSet mResult = dataDelivery.getBatch();
 
             //加载停用词典
             Set<String> stopWords = readTxtFileIntoStringSet("stop.txt");
@@ -94,7 +87,9 @@ public class Segment extends Thread {
 
 
 
-        }catch (Exception e){}
+        }catch (Exception e){e.printStackTrace();}
+        activeThread.remove(this.hashCode());
+        System.out.println("Thread " +  threadName + " exiting.");
 
     }
 
@@ -132,15 +127,25 @@ public class Segment extends Thread {
 
         return set;
     }
+    public void start () {
+        System.out.println("Starting " +  threadName );
+        if (t == null) {
+            t = new Thread (this, threadName);
+            System.out.println("t.start()");
+            t.start ();
+        }
+    }
+
 }
 class TestThread {
 
-    public static void main(String args[]) throws SQLException {
-        DataDelivery dataDelivery = new  DataDelivery(2010,2019,1000);
+    public static void main(String args[]) throws Exception {
+        DataDelivery dataDelivery = new  DataDelivery(2010,2011,1000);
+
 
         while (true){
             try {
-            if(Segment.activeThread.size()<8) {
+            if(Segment.activeThread.size()<2) {
                 Segment T1 = new Segment("T",dataDelivery);
                 T1.start();
             }

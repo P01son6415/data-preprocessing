@@ -34,7 +34,7 @@ public class DataDelivery {
         }
     }
 
-    public ResultSet getBouch() throws SQLException{
+    public ResultSet getBatch() throws SQLException{
         synchronized (this){
             ResultSet mResult = null;
             //迭代所有年份
@@ -46,6 +46,7 @@ public class DataDelivery {
                     finished[i]++;
                     mResult = mysqlPs.executeQuery();
                     logger.info("第 "+j+" 年第 "+finished[i]+" 轮");
+                    return mResult;
 
                 }
             }
