@@ -25,19 +25,16 @@ public class Segment extends Thread {
     Segment(String name,DataDelivery dataDelivery) throws IOException{
         this.dataDelivery = dataDelivery;
         threadName = name;
-        System.out.println("Creating " +  threadName );
         this.fileWriter = new SyncFileWriter("paper_segment2.txt");
     }
 
 
     @Override
     public void run() {
-        System.out.println("running ");
         activeThread.put(this.hashCode(),0);
 
         try {
 
-            System.out.println("GetBatch");
             ResultSet mResult = dataDelivery.getBatch();
 
             //加载停用词典
@@ -53,8 +50,9 @@ public class Segment extends Thread {
                     String title = mResult.getString("Title");
                     //论文的摘要
                     String abst = mResult.getString("Abstract");
-                    List<Term> titleList = HanLP.segment(title);
-                    if (!titleList.isEmpty()) {
+
+                    if(title != null && title != ""){
+                        List<Term> titleList = HanLP.segment(title);
                         StringBuilder titleBuffer = new StringBuilder();
                         for (Term term : titleList) {
                             //判断是否是停用词
@@ -66,9 +64,8 @@ public class Segment extends Thread {
                         fileWriter.writeAndFlush(titleBuffer.toString());
                     }
 
-
-                    List<Term> abstList = HanLP.segment(abst);
-                    if (!abstList.isEmpty()) {
+                    if(abst != null && abst != ""){
+                        List<Term> abstList = HanLP.segment(abst);
                         StringBuilder abstBuffer = new StringBuilder();
                         for (Term term : abstList) {
                             //判断是否是停用词
@@ -89,7 +86,6 @@ public class Segment extends Thread {
 
         }catch (Exception e){e.printStackTrace();}
         activeThread.remove(this.hashCode());
-        System.out.println("Thread " +  threadName + " exiting.");
 
     }
 
@@ -128,10 +124,8 @@ public class Segment extends Thread {
         return set;
     }
     public void start () {
-        System.out.println("Starting " +  threadName );
         if (t == null) {
             t = new Thread (this, threadName);
-            System.out.println("t.start()");
             t.start ();
         }
     }
@@ -140,20 +134,16 @@ public class Segment extends Thread {
 class TestThread {
 
     public static void main(String args[]) throws Exception {
-        DataDelivery dataDelivery = new  DataDelivery(2010,2011,1000);
-
-
+        DataDelivery dataDelivery = new  DataDelivery(2016,2019,10000);
         while (true){
             try {
-            if(Segment.activeThread.size()<2) {
+            if(Segment.activeThread.size()<8) {
                 Segment T1 = new Segment("T",dataDelivery);
                 T1.start();
             }
-
-
-                Thread.sleep(2000);
             }catch (Exception e){}
-
+            if(DataDelivery.finished[3] == DataDelivery.round[3])
+                break;
         }
 
     }

@@ -23,7 +23,7 @@ public class DataDelivery {
         this.to = to;
         this.bunchSize = bunchSize;
         this.round = new int[to-from+1];
-        for(int i = 0,j = from;j<to;j++,i++){
+        for(int i = 0,j = from;j<=to;j++,i++){
 
             ResultSet result = mysqlConnection.createStatement().executeQuery("SELECT count(*) as count FROM ArticleInfo_201"+i);
             result.next();

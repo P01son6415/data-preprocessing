@@ -4,10 +4,10 @@ import java.io.BufferedInputStream;
 import java.io.*;
 import java.util.Calendar;
 
-public class TestRowCount {
+public class RowCounter {
     public static void main(String[] args) {
         long datestart = Calendar.getInstance().getTimeInMillis();
-        int count = getFileLineCounts("XXX");
+        int count = getFileLineCounts("paper_segment.txt");
         System.out.println(count);
         long dateend = Calendar.getInstance().getTimeInMillis();
         System.out.println((dateend - datestart) / 1000);
