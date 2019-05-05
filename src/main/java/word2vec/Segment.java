@@ -28,7 +28,8 @@ public class Segment extends Thread {
 
     static ConcurrentHashMap<Integer,Integer> activeThread = new ConcurrentHashMap<Integer, Integer>();
 
-    Segment(String name) throws IOException{
+    Segment(String name,DataDelivery dataDelivery) throws IOException{
+        this.dataDelivery = dataDelivery;
         threadName = name;
         System.out.println("Creating " +  threadName );
         this.fileWriter = new SyncFileWriter("paper_segment2.txt");
@@ -42,8 +43,6 @@ public class Segment extends Thread {
 
 
         try {
-
-            dataDelivery = new  DataDelivery(2010,2019,1000);
 
 
             ResultSet mResult = dataDelivery.getBouch();
@@ -136,12 +135,13 @@ public class Segment extends Thread {
 }
 class TestThread {
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws SQLException {
+        DataDelivery dataDelivery = new  DataDelivery(2010,2019,1000);
 
         while (true){
             try {
             if(Segment.activeThread.size()<8) {
-                Segment T1 = new Segment("T");
+                Segment T1 = new Segment("T",dataDelivery);
                 T1.start();
             }
 
