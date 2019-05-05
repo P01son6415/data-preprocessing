@@ -24,68 +24,70 @@ public class Segment {
         Connection mysqlConnection = MysqlDatabase.getConnection();
 
 
+        for(int i = 0;i<9 ;i++) {
         /*
             获得表格总行数，计算循环次数
          */
-        ResultSet result = mysqlConnection.createStatement().executeQuery("SELECT count(*) as count FROM ArticleInfo_2016");
-        result.next();
-        int row = result.getInt("count");
-        int allRounds = (int) (row / 1000);
-        logger.info("获取到 " + row + " 条数据");
+            ResultSet result = mysqlConnection.createStatement().executeQuery("SELECT count(*) as count FROM ArticleInfo_201"+i);
+            result.next();
+            int row = result.getInt("count");
+            int allRounds = (int) (row / 1000);
+            logger.info("获取到 " + row + " 条数据");
 
-        //加载停用词典
-        Set<String> stopWords = readTxtFileIntoStringSet("stop.txt");
+            //加载停用词典
+            Set<String> stopWords = readTxtFileIntoStringSet("stop.txt");
 
 
+            for (int round = 0; round < allRounds; round++) {
+                logger.info("已完成 201"+i+" 年数据，" + (round / (float) allRounds) * 100 + "%");
+                //写入分词结果的目的文件
+                FileWriter fw = new FileWriter("paper_segment.txt", true);
+                PrintWriter pw = new PrintWriter(fw);
 
-        for (int round = 0; round < allRounds; round++) {
-            logger.info("当前已完成第 " + (round + 1) + " 轮，" + (round / (float)allRounds) * 100 + "%");
-            //写入分词结果的目的文件
-            FileWriter fw = new FileWriter("paper_segment.txt",true);
-            PrintWriter pw = new PrintWriter(fw);
+                PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_201"+i+" limit ?,1000");
+                mysqlPs.setInt(1, 1000 * round);
+                ResultSet mResult = mysqlPs.executeQuery();
+                int line = 0;
 
-            PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2016 limit ?,1000");
-            mysqlPs.setInt(1, 1000 * round);
-            ResultSet mResult = mysqlPs.executeQuery();
-            int line = 0;
+                //依次对每个语料进行分词
+                while (mResult.next()) {
 
-            //依次对每个语料进行分词
-            while (mResult.next()) {
-
-                try {
-                    //论文的标题
-                    String title =  mResult.getString("Title");
-                    //论文的摘要
-                    String abst = mResult.getString("Abstract");
-                    List<Term> titleList = HanLP.segment(title);
-                    if(!titleList.isEmpty()) {
-                        for (Term term : titleList) {
-                            //判断是否是停用词
-                            if(stopWords.contains(term.word))
-                                continue;
-                            pw.write(term.word + " ");
+                    try {
+                        //论文的标题
+                        String title = mResult.getString("Title");
+                        //论文的摘要
+                        String abst = mResult.getString("Abstract");
+                        List<Term> titleList = HanLP.segment(title);
+                        if (!titleList.isEmpty()) {
+                            for (Term term : titleList) {
+                                //判断是否是停用词
+                                if (stopWords.contains(term.word))
+                                    continue;
+                                pw.write(term.word + " ");
+                            }
+                            pw.write("\n");
                         }
-                        pw.write("\n");
+
+                        List<Term> abstList = HanLP.segment(abst);
+                        if (!abstList.isEmpty()) {
+                            for (Term term : abstList) {
+                                //判断是否是停用词
+                                if (stopWords.contains(term.word))
+                                    continue;
+                                pw.write(term.word + " ");
+                            }
+                            pw.write("\n");
+                        }
+                    } catch (Exception e) {
                     }
 
-                    List<Term> abstList = HanLP.segment(abst);
-                    if(!abstList.isEmpty()) {
-                        for (Term term : abstList) {
-                            //判断是否是停用词
-                            if(stopWords.contains(term.word))
-                                continue;
-                            pw.write(term.word + " ");
-                        }
-                        pw.write("\n");
-                    }
-                }catch (Exception e){}
+                }
+                pw.flush();
+                fw.flush();
+                fw.close();
+                pw.close();
 
             }
-            pw.flush();
-            fw.flush();
-            fw.close();
-            pw.close();
-
         }
 
     }
