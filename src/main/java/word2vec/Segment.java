@@ -6,14 +6,15 @@ import database.MysqlDatabase;
 import org.apache.log4j.Logger;
 import processing.MysqlNeo4jRest;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Segment {
     private static Logger logger = Logger.getLogger(Segment.class);
@@ -22,7 +23,6 @@ public class Segment {
 
         Connection mysqlConnection = MysqlDatabase.getConnection();
 
-        //写入分词结果的目的文件
 
         /*
             获得表格总行数，计算循环次数
@@ -33,10 +33,14 @@ public class Segment {
         int allRounds = (int) (row / 1000);
         logger.info("获取到 " + row + " 条数据");
 
+        //加载停用词典
+        Set<String> stopWords = readTxtFileIntoStringSet("stop.txt");
+
 
 
         for (int round = 0; round < allRounds; round++) {
             logger.info("当前已完成第 " + (round + 1) + " 轮，" + (round / (float)allRounds) * 100 + "%");
+            //写入分词结果的目的文件
             FileWriter fw = new FileWriter("paper_segment.txt",true);
             PrintWriter pw = new PrintWriter(fw);
 
@@ -44,23 +48,36 @@ public class Segment {
             mysqlPs.setInt(1, 1000 * round);
             ResultSet mResult = mysqlPs.executeQuery();
             int line = 0;
-            //依次从每行数据中提取实体、建立关系
+
+            //依次对每个语料进行分词
             while (mResult.next()) {
 
                 try {
+                    //论文的标题
                     String title =  mResult.getString("Title");
+                    //论文的摘要
                     String abst = mResult.getString("Abstract");
                     List<Term> titleList = HanLP.segment(title);
-                    for (Term term:titleList) {
-                        pw.write(term.word+" ");
+                    if(!titleList.isEmpty()) {
+                        for (Term term : titleList) {
+                            //判断是否是停用词
+                            if(stopWords.contains(term.word))
+                                continue;
+                            pw.write(term.word + " ");
+                        }
+                        pw.write("\n");
                     }
-                    pw.write("\n");
 
                     List<Term> abstList = HanLP.segment(abst);
-                    for (Term term:abstList) {
-                        pw.write(term.word+" ");
+                    if(!abstList.isEmpty()) {
+                        for (Term term : abstList) {
+                            //判断是否是停用词
+                            if(stopWords.contains(term.word))
+                                continue;
+                            pw.write(term.word + " ");
+                        }
+                        pw.write("\n");
                     }
-                    pw.write("\n");
                 }catch (Exception e){}
 
             }
@@ -71,5 +88,40 @@ public class Segment {
 
         }
 
+    }
+
+    public static Set<String> readTxtFileIntoStringSet(String filePath)
+    {
+        Set<String> set = new TreeSet<String>();
+        try
+        {
+            String encoding = "UTF-8";
+            File file = new File(filePath);
+            if (file.isFile() && file.exists())
+            { // 判断文件是否存在
+                InputStreamReader read = new InputStreamReader(
+                        new FileInputStream(file), encoding);// 考虑到编码格式
+                BufferedReader bufferedReader = new BufferedReader(read);
+                String lineTxt = null;
+
+                while ((lineTxt = bufferedReader.readLine()) != null)
+                {
+                    set.add(lineTxt);
+                }
+                bufferedReader.close();
+                read.close();
+            }
+            else
+            {
+                System.out.println("找不到指定的文件");
+            }
+        }
+        catch (Exception e)
+        {
+            System.out.println("读取文件内容出错");
+            e.printStackTrace();
+        }
+
+        return set;
     }
 }
