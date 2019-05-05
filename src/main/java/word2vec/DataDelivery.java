@@ -45,7 +45,7 @@ public class DataDelivery {
                     mysqlPs.setInt(1, bunchSize * finished[i]);
                     finished[i]++;
                     mResult = mysqlPs.executeQuery();
-                    logger.info("第 "+finished[i]);
+                    logger.info("第 "+j+" 年第 "+finished[i]+" 轮");
 
                 }
             }
