@@ -7,6 +7,7 @@ import com.hankcs.hanlp.seg.NShort.NShortSegment;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
 import com.hankcs.hanlp.tokenizer.IndexTokenizer;
+import com.hankcs.hanlp.tokenizer.NLPTokenizer;
 import database.MysqlDatabase;
 
 import java.io.*;
@@ -38,15 +39,16 @@ public class SegmentTest
             //String abst = mResult.getString("Abstract");
 
             System.out.println("原文："+title);
-            System.out.println("N-最短分词：" + nShortSegment.seg(title) + "\n最短路分词：" + shortestSegment.seg(title));
-            System.out.println("CRF分词：" + crfLexicalAnalyzer.analyze(title));
+            System.out.println("1. N-最短分词：" + nShortSegment.seg(title) + "\n2. 最短路分词：" + shortestSegment.seg(title));
+            System.out.println("3. CRF分词：" + crfLexicalAnalyzer.analyze(title));
 
             List<Term> termList = IndexTokenizer.segment(title);
-            System.out.print("索引分词：");
+            System.out.print("4. 索引分词：");
             for (Term term : termList)
             {
                 System.out.print(term + " ");
             }
+            System.out.println("5. NLP分词："+NLPTokenizer.segment(title));
             System.out.println("===================================================");
         }
 
