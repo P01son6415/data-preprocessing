@@ -37,16 +37,17 @@ public class SegmentTest
             //论文的摘要
             //String abst = mResult.getString("Abstract");
 
-
+            System.out.println("原文："+title);
             System.out.println("N-最短分词：" + nShortSegment.seg(title) + "\n最短路分词：" + shortestSegment.seg(title));
             System.out.println("CRF分词：" + crfLexicalAnalyzer.analyze(title));
 
             List<Term> termList = IndexTokenizer.segment(title);
-            System.out.println("索引分词：");
+            System.out.print("索引分词：");
             for (Term term : termList)
             {
-                System.out.println(term + " [" + term.offset + ":" + (term.offset + term.word.length()) + "]");
+                System.out.print(term + " ");
             }
+            System.out.println("===================================================");
         }
 
     }
