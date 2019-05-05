@@ -31,7 +31,7 @@ public class Segment extends Thread {
     Segment(String name) throws IOException{
         threadName = name;
         System.out.println("Creating " +  threadName );
-        this.fileWriter = new SyncFileWriter("paper_segment.txt");
+        this.fileWriter = new SyncFileWriter("paper_segment2.txt");
     }
 
 
@@ -43,7 +43,7 @@ public class Segment extends Thread {
 
         try {
 
-            dataDelivery = new  DataDelivery(2010,2012,1000);
+            dataDelivery = new  DataDelivery(2010,2019,1000);
 
 
             ResultSet mResult = dataDelivery.getBouch();
@@ -140,7 +140,7 @@ class TestThread {
 
         while (true){
             try {
-            if(Segment.activeThread.size()<12) {
+            if(Segment.activeThread.size()<8) {
                 Segment T1 = new Segment("T");
                 T1.start();
             }
