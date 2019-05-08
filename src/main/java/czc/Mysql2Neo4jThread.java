@@ -1,4 +1,4 @@
-package processing;
+package czc;
 
 import com.google.protobuf.Message;
 import database.MysqlDatabase;
@@ -7,6 +7,7 @@ import org.apache.http.util.TextUtils;
 import org.apache.log4j.Logger;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import processing.MysqlToNeo4j;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -106,7 +107,6 @@ public class Mysql2Neo4jThread {
                                                 if (!TextUtils.isEmpty(authorName)) {  //判空（必要）
                                                     synchronized (this) {
                                                         aId = (++authorId[0]);
-//                                                        System.out.println("第" + finalRound + "轮,authorId: " + aId);
                                                     }
                                                     session.run("CREATE (p:czc_Author {authorId: " + aId
                                                             + ", author_name: \"" + authorName + "\"})");
@@ -134,7 +134,6 @@ public class Mysql2Neo4jThread {
                                                 if (!orgResult.hasNext()) {  //去重
                                                     synchronized (this) {
                                                         oId = (++orgId[0]);
-//                                                        System.out.println("第" + finalRound + "轮, organId: " + oId);
                                                     }
                                                     session.run("CREATE (o:czc_Organ {orgId: " + oId
                                                             + ", org_name: \"" + orgName + "\"})");
@@ -149,7 +148,6 @@ public class Mysql2Neo4jThread {
                                             if (!journalResult.hasNext()) {  //去重
                                                 synchronized (this) {
                                                     jId = (++journalId[0]);
-//                                                    System.out.println("第" + finalRound + "轮, journalId: " + jId);
                                                 }
                                                 session.run("CREATE (j:czc_Journal {journalId: " + jId
                                                         + ", journal_name: \"" + journal.trim() + "\"})");
@@ -170,7 +168,6 @@ public class Mysql2Neo4jThread {
                                                     if (!keyword_result.hasNext()) {  //去重
                                                         synchronized (this) {
                                                             kId = (++keywordId[0]);
-//                                                            System.out.println("第" + finalRound + "轮, keywordId: " + kId);
                                                         }
                                                         session.run("CREATE (k:czc_Keyword {keywordId: " + kId
                                                                 + ", keyword_name: \"" + keywordArray[i].trim() + "\"})");
