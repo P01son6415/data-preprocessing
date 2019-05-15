@@ -1,4 +1,4 @@
-package czc;
+package czc.dataTrans;
 
 import com.google.protobuf.Message;
 import database.MysqlDatabase;
@@ -73,9 +73,7 @@ public class Mysql2Neo4jThread {
                                         String authorOrgan = mResult.getString("AuthorOrgan");
 
                                         //添加paper实体
-                                        if (TextUtils.isEmpty(paper)) {
-                                            continue;
-                                        }
+                                        if (TextUtils.isEmpty(paper)) continue;
                                         //查询paper实体是否已经在图数据库中
                                         StatementResult paperResult = session.run("MATCH (p:czc_Paper) WHERE p.paper_name =\"" + paper.trim() + "\" RETURN p");
                                         //如果存在则跳过当前行数据
