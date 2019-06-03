@@ -1,6 +1,7 @@
 package processing;
 
 
+import database.Constant;
 import database.MysqlDatabase;
 import database.Neo4jRest;
 import org.apache.http.util.TextUtils;
@@ -17,7 +18,7 @@ public class MysqlNeo4jRest {
     private static Logger logger = Logger.getLogger(MysqlNeo4jRest.class);
 
     public static void main(String[] args) throws SQLException {
-        Connection mysqlConnection = MysqlDatabase.getConnection();
+        Connection mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
 
         /*
             获得表格总行数，计算循环次数
