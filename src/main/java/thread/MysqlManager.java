@@ -1,5 +1,6 @@
 package thread;
 
+import database.Constant;
 import database.MysqlDatabase;
 import org.apache.log4j.Logger;
 
@@ -17,7 +18,7 @@ public class MysqlManager {
 
     public MysqlManager() {
         try {
-            this.mysqlConnection = MysqlDatabase.getConnection();
+            this.mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
             ResultSet result = mysqlConnection.createStatement().executeQuery("SELECT count(*) as count FROM ArticleInfo_2010");
             result.next();
             int row = result.getInt("count");

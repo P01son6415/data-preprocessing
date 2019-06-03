@@ -9,6 +9,7 @@ import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
 import com.hankcs.hanlp.tokenizer.IndexTokenizer;
 import com.hankcs.hanlp.tokenizer.NLPTokenizer;
+import database.Constant;
 import database.MysqlDatabase;
 
 import java.io.*;
@@ -23,7 +24,7 @@ public class SegmentTest
 {
     public static void main(String[] args) throws IOException, SQLException
     {
-        Connection mysqlConnection = MysqlDatabase.getConnection();
+        Connection mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
         PreparedStatement mysqlPs = mysqlConnection.prepareStatement("SELECT * FROM ArticleInfo_2010 limit 100000,5");
         ResultSet mResult = mysqlPs.executeQuery();
         Segment nShortSegment = new NShortSegment().enableCustomDictionary(false).enablePlaceRecognize(true).enableOrganizationRecognize(true);

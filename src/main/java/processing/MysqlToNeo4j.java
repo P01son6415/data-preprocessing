@@ -1,5 +1,6 @@
 package processing;
 
+import database.Constant;
 import database.MysqlDatabase;
 import database.Neo4jDatabase;
 import org.apache.http.util.TextUtils;
@@ -17,7 +18,7 @@ public class MysqlToNeo4j {
     private static Logger logger = Logger.getLogger(MysqlToNeo4j.class);
 
     public static void main(String[] args) throws SQLException {
-        Connection mysqlConnection = MysqlDatabase.getConnection();
+        Connection mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
         Session sessionAll = Neo4jDatabase.getSession();
 
         /*

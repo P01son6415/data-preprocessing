@@ -1,6 +1,6 @@
 package czc.dataTrans;
 
-import com.google.protobuf.Message;
+import database.Constant;
 import database.MysqlDatabase;
 import database.Neo4jDatabase;
 import org.apache.http.util.TextUtils;
@@ -16,13 +16,12 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Handler;
 
 public class Mysql2Neo4jThread {
     private static Logger logger = Logger.getLogger(MysqlToNeo4j.class);
 
     public static void main(String[] args) throws SQLException {
-        final Connection mysqlConnection = MysqlDatabase.getConnection();
+        final Connection mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
         Session sessionAll = Neo4jDatabase.getSession();
 
         /*

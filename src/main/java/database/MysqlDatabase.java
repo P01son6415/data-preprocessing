@@ -10,11 +10,11 @@ public class MysqlDatabase {
     private static String password;
 
 
-    public static Connection getConnection(){
+    public static Connection getConnection(String url){
         Connection cn = null;
         try{
             Class.forName(Constant.mysqlDriver);
-            cn = DriverManager.getConnection(Constant.mysqlUrl, Constant.mysqlUser, Constant.mysqPassword);
+            cn = DriverManager.getConnection(url, Constant.mysqlUser, Constant.mysqPassword);
 
         }catch (Exception e){
             e.printStackTrace();

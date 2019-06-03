@@ -1,5 +1,6 @@
 package word2vec;
 
+import database.Constant;
 import database.MysqlDatabase;
 import org.apache.log4j.Logger;
 
@@ -16,7 +17,7 @@ public class DataDelivery {
     int bunchSize;  //每个ResultSet包含多少数据
     int from;   //起始年份
     int to;     //结束年份
-    Connection mysqlConnection = MysqlDatabase.getConnection();
+    Connection mysqlConnection = MysqlDatabase.getConnection(Constant.mysqlUrlKG);
 
     public DataDelivery(int from,int to, int bunchSize) throws SQLException {
         this.from = from;
